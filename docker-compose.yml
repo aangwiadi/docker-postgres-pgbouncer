@@ -1,0 +1,155 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    shm_size: 2gb
+    environment:
+      POSTGRES_DB: event-src
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: 'VeryStronGP4$$w0rd!'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+    command: >
+      postgres -c config_file=/etc/postgresql/postgresql.conf
+    networks:
+      - postgres-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d event-src"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 16G
+        reservations:
+          cpus: '2'
+          memory: 8G
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: pgbouncer
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "6432:6432"
+    volumes:
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
+    environment:
+      DB_USER: appuser
+      DB_PASSWORD: 'VeryStronGP4$$w0rd!'
+      ADMIN_USERS: appuser
+    networks:
+      - postgres-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 6432"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter
+    container_name: postgres_exporter
+    restart: always
+    environment:
+      DATA_SOURCE_NAME: 'postgresql://appuser:VeryStronGP4$$w0rd!@postgres:5432/event-src?sslmode=disable'
+    ports:
+      - "9187:9187"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - postgres-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  pgbouncer_exporter:
+    image: prometheuscommunity/pgbouncer-exporter
+    container_name: pgbouncer_exporter
+    restart: always
+    environment:
+      PGBOUNCER_EXPORTER_HOST: pgbouncer
+      PGBOUNCER_EXPORTER_PORT: 6432
+      PGBOUNCER_USER: appuser
+      PGBOUNCER_PASS: 'VeryStronGP4$$w0rd!'
+      DATABASE_URL: 'postgresql://appuser:VeryStronGP4$$w0rd!@pgbouncer:6432/pgbouncer?sslmode=disable'
+    ports:
+      - "9127:9127"
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+    networks:
+      - postgres-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: always
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - postgres-net
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - postgres-net
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+networks:
+  postgres-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
