@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_DB: event-src
       POSTGRES_USER: appuser
-      POSTGRES_PASSWORD: 'VeryStronGP4$$w0rd!'
+      POSTGRES_PASSWORD: 'SecurePass123'
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
@@ -49,7 +49,7 @@ services:
       - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
     environment:
       DB_USER: appuser
-      DB_PASSWORD: 'VeryStronGP4$$w0rd!'
+      DB_PASSWORD: 'SecurePass123'
       ADMIN_USERS: appuser
     networks:
       - postgres-net
@@ -72,7 +72,7 @@ services:
     container_name: postgres_exporter
     restart: always
     environment:
-      DATA_SOURCE_NAME: 'postgresql://appuser:VeryStronGP4$$w0rd!@postgres:5432/event-src?sslmode=disable'
+      DATA_SOURCE_NAME: 'postgresql://appuser:SecurePass123@postgres:5432/event-src?sslmode=disable'
     ports:
       - "9187:9187"
     depends_on:
@@ -94,8 +94,8 @@ services:
       PGBOUNCER_EXPORTER_HOST: pgbouncer
       PGBOUNCER_EXPORTER_PORT: 6432
       PGBOUNCER_USER: appuser
-      PGBOUNCER_PASS: 'VeryStronGP4$$w0rd!'
-      DATABASE_URL: 'postgresql://appuser:VeryStronGP4$$w0rd!@pgbouncer:6432/pgbouncer?sslmode=disable'
+      PGBOUNCER_PASS: 'SecurePass123'
+      DATABASE_URL: 'postgresql://appuser:SecurePass123@pgbouncer:6432/pgbouncer?sslmode=disable'
     ports:
       - "9127:9127"
     depends_on:
