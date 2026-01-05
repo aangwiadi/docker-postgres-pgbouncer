@@ -54,7 +54,7 @@ services:
     networks:
       - postgres-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -p 6432"]
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 6432 -U appuser"]
       interval: 10s
       timeout: 5s
       retries: 5
